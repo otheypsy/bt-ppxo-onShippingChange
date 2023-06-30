@@ -1,0 +1,46 @@
+@import 'bootstrap/scss/bootstrap';
+@import '@fontsource/space-mono';
+
+@font-face {
+    font-family: 'PayPal-Light';
+    font-display: swap;
+    src: local('pp-sans-big-light'),
+        url('https://www.paypalobjects.com/digitalassets/c/paypal-ui/fonts/PayPalSansBig-Light.woff2') format('woff2'),
+        url('https://www.paypalobjects.com/digitalassets/c/paypal-ui/fonts/PayPalSansBig-Light.woff') format('woff'),
+        url('https://www.paypalobjects.com/digitalassets/c/paypal-ui/fonts/PayPalSansBig-Light.eot')
+            format('embedded-opentype'),
+        url('https://www.paypalobjects.com/digitalassets/c/paypal-ui/fonts/PayPalSansBig-Light.svg') format('svg');
+}
+
+html,
+body {
+    font-family: 'PayPal-Light', sans-serif;
+    height: 100%;
+    min-height: 100%;
+    overflow-wrap: break-word;
+}
+
+.btn {
+    font-size: 1.1rem;
+    &:focus {
+        box-shadow: none;
+    }
+}
+
+.busyContainer {
+    position: fixed;
+    text-align: center;
+    background: radial-gradient(rgba(1, 1, 1, 0.4), rgba(1, 1, 1, 0.3));
+    z-index: 9999;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+.busyGroup {
+    top: 50%;
+    left: 50%;
+    position: absolute;
+    transform: translate(-50%, -50%);
+}
