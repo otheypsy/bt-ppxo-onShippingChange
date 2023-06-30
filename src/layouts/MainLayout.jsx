@@ -1,12 +1,19 @@
 import { useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
+import { useGetAppState } from '../states/App/AppHooks'
 import { useGetAlert, useSetAlert } from '../states/Alert/AlertHooks'
 import Link from '../components/Link'
 
 const MainLayout = (props) => {
+    const appState = useGetAppState()
     const location = useLocation()
     const alert = useGetAlert()
     const { success } = useSetAlert()
+
+    const finalRoutes = props.routes.filter((route) => {
+        if (route.isDep && !appState?.clientInstance) return false
+        return true
+    })
 
     useEffect(() => {
         success()
@@ -26,7 +33,7 @@ const MainLayout = (props) => {
                     {props.title || 'Heading Here'}
                 </span>
                 <nav className="nav">
-                    {props.routes.map((route) => (
+                    {finalRoutes.map((route) => (
                         <Link key={route.path} to={route.path} label={route.label} />
                     ))}
                 </nav>
