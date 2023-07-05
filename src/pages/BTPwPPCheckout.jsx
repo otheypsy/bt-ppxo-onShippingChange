@@ -4,24 +4,81 @@ import { useGetAppState } from '../states/App/AppHooks'
 import { useSetAlert } from '../states/Alert/AlertHooks'
 import PayPalButtons from '../features/PayPalButtons'
 
+const fundingSources = ['paypal']
+
+const shippingOptions = [
+    {
+        id: 's-1',
+        label: 'Free Shipping',
+        selected: true,
+        type: 'SHIPPING',
+        amount: {
+            value: 0.0,
+            currency: 'USD',
+        },
+    },
+    {
+        id: 's-2',
+        label: 'Priority Shipping',
+        selected: false,
+        type: 'SHIPPING',
+        amount: {
+            value: 5.0,
+            currency: 'USD',
+        },
+    },
+    {
+        id: 's-3',
+        label: 'Next Day Shipping',
+        selected: false,
+        type: 'SHIPPING',
+        amount: {
+            value: 10.0,
+            currency: 'USD',
+        },
+    },
+]
+
 const cart = {
     flow: 'checkout',
-    amount: '100.00',
+    amount: 100.0,
     currency: 'USD',
     intent: 'capture',
 
-    enableShippingAddress: false,
-    shippingAddressEditable: false,
-    shippingAddressOverride: {
-        recipientName: 'Scruff McGruff',
-        line1: '1234 Main St.',
-        line2: 'Unit 1',
-        city: 'Chicago',
-        countryCode: 'US',
-        postalCode: '60652',
-        state: 'IL',
-        phone: '123.456.7890',
-    },
+    enableShippingAddress: true,
+    shippingAddressEditable: true,
+}
+
+const calculateUpdateOptions = (data) => {
+    /*
+        The code here is purely for demonstration
+        There are a few use cases that are not handled correctly
+    */
+
+    const options = {
+        paymentId: data.paymentId,
+        amount: parseFloat(cart.amount) + parseFloat(data.selected_shipping_option?.amount?.value || 0),
+        currency: cart.currency,
+    }
+
+    const finalShippingOptions = [
+        shippingOptions[0],
+        shippingOptions[1],
+        // Mocked business logic
+        ...(data.shipping_address.postal_code === '85254' ? [shippingOptions[2]] : []),
+    ]
+
+    options.shippingOptions = finalShippingOptions.map((shippingOption) => {
+        return {
+            ...shippingOption,
+            // Identify selected option
+            selected:
+                (!data.selected_shipping_option && shippingOption.id === 's-1') ||
+                data.selected_shipping_option?.id === shippingOption.id,
+        }
+    })
+
+    return options
 }
 
 const BTPwPPCheckoutCore = () => {
@@ -48,8 +105,6 @@ const BTPwPPCheckoutCore = () => {
                     currency: cart.currency,
                     intent: cart.intent,
                     commit: false,
-                    'disable-funding': 'card',
-                    'enable-funding': 'venmo',
                 })
                 console.log('BTPwPPCheckout: paypalSDK', window.paypal)
 
@@ -65,7 +120,7 @@ const BTPwPPCheckoutCore = () => {
         return () => {
             paypalInstance && paypalInstance.teardown()
         }
-    }, [appState, success, warning, danger])
+    }, [appState.clientInstance, success, warning, danger])
 
     // PayPal Buttons Configuration
     const ppConfig = useMemo(() => {
@@ -75,7 +130,7 @@ const BTPwPPCheckoutCore = () => {
                   createOrder: async () => {
                       try {
                           warning('Redirecting to PayPal for approval...')
-                          console.log('PayPalButtons: createOrder', cart)
+                          console.log('PPXOCheckout: createOrder', cart)
                           return await ppInstance.createPayment(cart)
                       } catch (error) {
                           console.error(error)
@@ -84,12 +139,25 @@ const BTPwPPCheckoutCore = () => {
                   },
                   onApprove: async (data) => {
                       try {
-                          console.log('PayPalButtons: onApprove', data)
+                          console.log('PPXOCheckout: onApprove', data)
                           const response = await ppInstance.tokenizePayment(data)
-                          console.log('PayPalButtons: tokenizePayment', response)
+                          console.log('PPXOCheckout: tokenizePayment', response)
                           success('Ready!')
                       } catch (error) {
                           console.error(error)
+                          danger('Error!')
+                      }
+                  },
+                  onShippingChange: async (data, actions) => {
+                      try {
+                          console.log('PPXOCheckout: onShippingChange', data)
+                          const options = calculateUpdateOptions(data)
+                          console.log('PPXOCheckout: options', options)
+                          const response = await ppInstance.updatePayment(options)
+                          console.log('PPXOCheckout: updatePayment', response)
+                          return actions.resolve()
+                      } catch (e) {
+                          console.error(e)
                           danger('Error!')
                       }
                   },
@@ -106,7 +174,9 @@ const BTPwPPCheckoutCore = () => {
                 </pre>
                 <br />
                 <div className="row">
-                    <div className="col-4">{ppConfig && <PayPalButtons ppConfig={ppConfig} />}</div>
+                    <div className="col-4">
+                        {ppConfig && <PayPalButtons ppConfig={ppConfig} fundingSources={fundingSources} />}
+                    </div>
                 </div>
             </div>
         </div>
