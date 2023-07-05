@@ -36,7 +36,8 @@ const PayPalButtons = (props) => {
         const container = ppContainer.current
         const initialize = async () => {
             if (!window?.paypal?.Buttons) throw Error('PayPal JS SDK not found')
-            window.paypal.getFundingSources().forEach(async (fundingSource) => {
+            const fundingSources = props.fundingSources || window.paypal.getFundingSources()
+            fundingSources.forEach(async (fundingSource) => {
                 const button = window.paypal.Buttons({
                     ...finalPPConfig,
                     fundingSource: fundingSource,
