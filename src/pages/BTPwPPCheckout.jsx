@@ -6,11 +6,11 @@ import PayPalButtons from '../features/PayPalButtons'
 
 const fundingSources = ['paypal']
 
+const selectedShippingOptionId = 's-1'
 const shippingOptions = [
     {
         id: 's-1',
         label: 'Free Shipping',
-        selected: true,
         type: 'SHIPPING',
         amount: {
             value: 0.0,
@@ -20,7 +20,6 @@ const shippingOptions = [
     {
         id: 's-2',
         label: 'Priority Shipping',
-        selected: false,
         type: 'SHIPPING',
         amount: {
             value: 5.0,
@@ -30,7 +29,6 @@ const shippingOptions = [
     {
         id: 's-3',
         label: 'Next Day Shipping',
-        selected: false,
         type: 'SHIPPING',
         amount: {
             value: 10.0,
@@ -56,7 +54,7 @@ const calculateUpdateOptions = (data) => {
     */
 
     const options = {
-        paymentId: data.paymentId,
+        paymentId: data.orderID.split('-').pop(),
         amount: parseFloat(cart.amount) + parseFloat(data.selected_shipping_option?.amount?.value || 0),
         currency: cart.currency,
     }
@@ -65,16 +63,14 @@ const calculateUpdateOptions = (data) => {
         shippingOptions[0],
         shippingOptions[1],
         // Mocked business logic
-        ...(data.shipping_address.postal_code === '85254' ? [shippingOptions[2]] : []),
+        ...(data.shippingAddress.postalCode === '85254' ? [shippingOptions[2]] : []),
     ]
 
     options.shippingOptions = finalShippingOptions.map((shippingOption) => {
         return {
             ...shippingOption,
             // Identify selected option
-            selected:
-                (!data.selected_shipping_option && shippingOption.id === 's-1') ||
-                data.selected_shipping_option?.id === shippingOption.id,
+            selected: shippingOption.id === selectedShippingOptionId,
         }
     })
 
@@ -148,6 +144,23 @@ const BTPwPPCheckoutCore = () => {
                           danger('Error!')
                       }
                   },
+                  onShippingOptionsChange: async (data, actions) => {
+                      console.log('onShippingOptionsChange', { data, actions })
+                  },
+                  onShippingAddressChange: async (data, actions) => {
+                      try {
+                          console.log('PPXOCheckout: onShippingAddressChange', { data, actions })
+                          const options = calculateUpdateOptions(data)
+                          console.log('PPXOCheckout: options', options)
+                          const response = await ppInstance.updatePayment(options)
+                          console.log('PPXOCheckout: updatePayment', response)
+                          return true
+                      } catch (e) {
+                          console.error(e)
+                          danger('Error!')
+                      }
+                  },
+                  /*
                   onShippingChange: async (data, actions) => {
                       try {
                           console.log('PPXOCheckout: onShippingChange', data)
@@ -161,6 +174,7 @@ const BTPwPPCheckoutCore = () => {
                           danger('Error!')
                       }
                   },
+                  */
               }
     }, [ppInstance, success, warning, danger])
 
